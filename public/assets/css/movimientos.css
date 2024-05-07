@@ -1,0 +1,26 @@
+.btnVerDetalles {
+    background-color: #fff;
+    padding: 6px;
+    border: 1px solid;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btnVerDetalles {
+    margin-right: 20px;
+    color: rgb(54, 124, 255);
+}
+
+h2 {
+    font-size: 1.5em;
+    font-weight: bold;
+    line-height: 1.2;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+#thPrincipal {
+    color:rgb(35, 100, 221);
+    background-color: #e9e9e9c5;
+    text-align: center;
+}

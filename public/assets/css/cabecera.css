@@ -1,0 +1,76 @@
+#containerHeader {
+    display: flex;
+    flex-direction: row;
+    align-content: center;
+    justify-content: space-around;
+    align-items: center;
+
+
+    margin: 10px auto;
+    padding: 10px;
+    width: 96%;
+}
+
+#containerHeader h2 {
+    text-align: center;
+}
+
+#smallLogo {
+    width: 90px;
+}
+
+#informacionUsuario {
+    display: flex;
+    align-items: center;
+}
+
+.bi-person-circle {
+    cursor: pointer;
+    margin-left: 15px;
+    font-size: 40px;
+
+    transition: all 0.3s ease;
+}
+
+.bi-person-circle:hover {
+    color: #0076bb;
+}
+
+#containerLogoHeader {
+    width: 230px;
+}
+
+
+@media only screen and (max-width: 738px) {
+
+
+    #containerHeader,
+    #containerBtnVolver {
+        width: 95%;
+    }
+
+    #informacionUsuario {
+        text-align: center;
+        flex-direction: column-reverse;
+        font-size: 10px;
+    }
+
+    .bi-person-circle {
+        font-size: 40px !important;
+    }
+
+    #informacionSesion {
+        margin-top: 5px;
+    }
+
+    #containerLogoHeader {
+        width: 105px;
+    }
+}
+
+@media only screen and (max-width: 436px) {
+
+    #guionInformacionSesion {
+        display: none;
+    }
+}

@@ -1,0 +1,51 @@
+.btnEditar,
+.btnBorrar,
+#btnInsertar,
+.btnConfirmarCambios,
+.btnCancelarCambios {
+    background-color: #fff;
+    padding: 6px;
+    border: 1px solid;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btnEditar {
+    color: rgb(76, 76, 255);
+    margin-right: 10px;
+}
+
+#btnInsertar {
+    color: rgb(0, 109, 91);
+}
+
+.btnBorrar {
+    color: red;
+}
+
+#btnInsertar {
+    color: rgb(0, 109, 91);
+}
+
+.btnConfirmarCambios {
+    margin-right: 10px;
+
+    color: green;
+}
+
+.btnCancelarCambios {
+    color: red;
+}
+
+
+h2 {
+    font-size: 1.5em;
+    font-weight: bold;
+    line-height: 1.2;
+    margin-top: 20px;
+    margin-bottom: 20px;
+}
+
+.esconder::before {
+    content: "*****";
+  }

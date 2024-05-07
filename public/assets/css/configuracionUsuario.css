@@ -1,0 +1,152 @@
+#containerOpciones {
+  width: 65%;
+  height: 30vh;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+
+  animation: fadein 1s;
+  transition: height 2s;
+}
+
+.small {
+  /* background-color: red; */
+  height: 25vh !important;
+}
+
+#containerOpciones a {
+  text-decoration: none;
+}
+
+.opcion {
+  display: flex;
+  justify-content: center;
+  margin: px auto;
+  align-items: center;
+  height: 30%;
+
+  text-align: center;
+  width: 250px;
+  margin: 10px;
+  font-weight: 600;
+  background-color: #0076bb;
+  color: #fafafa;
+  padding: 15px 85px;
+  border-radius: 15px;
+  border: none;
+  box-shadow: 5px 5px 15px #bcbcbc, -5px -5px 15px #ffffff;
+  cursor: pointer;
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.opcion:hover {
+  transform: translateY(-2px);
+}
+
+
+#containerFormularioAccion {
+  width: 65%;
+
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+
+  animation: fadein 1s;
+
+}
+
+.divInput {
+  display: flex;
+  flex-direction: column;
+  width: 300px !important;
+  margin-bottom: 5px;
+}
+
+.divInputPassword {
+  display: flex;
+  flex-direction: row;
+
+}
+
+label {
+  display: block;
+  margin-bottom: 5px;
+  font-weight: bold;
+}
+
+input[type="text"],
+input[type="password"] {
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #ced4da;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 5px rgba(0, 123, 255, 0.5);
+}
+
+#btnEnviar {
+  margin-top: 10px;
+}
+
+
+#btnCerrarSesion{
+  float: right;
+  margin-right: 20px;
+  background-color: red;
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media only screen and (max-width: 850px) {
+
+  #containerHeader,
+  #containerBtnVolver {
+    width: 95%;
+  }
+
+  #informacionUsuario {
+    margin-left: 10px;
+    text-align: center;
+    flex-direction: column-reverse;
+    font-size: 10px;
+  }
+
+  .bi-person-circle {
+    font-size: 40px !important;
+  }
+
+  #informacionSesion {
+    margin-top: 5px;
+  }
+
+  #containerLogoHeader {
+    width: 105px;
+  }
+
+  .small {
+    height: 300px !important;
+  }
+
+}
+
+@media only screen and (max-width: 586px) {
+
+  #guionInformacionSesion {
+    display: none;
+  }
+}

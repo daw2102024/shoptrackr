@@ -1,0 +1,1308 @@
+/**
+ * Función que recoge los datos de una tabla (quitándo los de la última columna, que son de opciones)
+ * @param {string} idTabla ID de la tabla de la cual obtendré los datos
+ * @returns {Array} array de datos de la tabla
+ */
+function obtenerArrayTabla(idTabla) {
+    // inicializo variables
+    var arrayDeDatos = [];
+    var contador = 0;
+    var tablas = document.querySelectorAll(idTabla);
+
+    // recorro cada tabla
+    tablas.forEach(function (tabla) {
+        // inicializo variables locales
+        var datos = [];
+        var tmp = 1;
+
+        // recorro filas de encabezado
+        var filasEncabezado = tabla.querySelectorAll('thead tr');
+        filasEncabezado.forEach(function (fila) {
+            var attr = fila.getAttribute('style');
+            // verifico si la fila no está oculta
+            if (!attr || attr === "") {
+                datos[tmp] = [];
+                // recorro celdas de encabezado
+                var celdasEncabezado = fila.querySelectorAll('th:not(:last-child)');
+                celdasEncabezado.forEach(function (celda, index) {
+                    if (celda.textContent.trim() !== 'OPCIONES') {
+                        datos[tmp][index] = celda.textContent.trim();
+                    }
+                });
+                tmp++;
+            }
+        });
+
+        // recorro filas de cuerpo
+        var filasCuerpo = tabla.querySelectorAll('tbody tr');
+        filasCuerpo.forEach(function (fila) {
+            var attr = fila.getAttribute('style');
+            // verifico si la fila no está oculta
+            if (!attr || attr === "") {
+                datos[tmp] = [];
+                // recorro celdas de cuerpo
+                var celdasCuerpo = fila.querySelectorAll('td:not(:last-child)');
+                celdasCuerpo.forEach(function (celda, index) {
+                    if (celda.textContent.trim() !== '') {
+                        datos[tmp][index] = celda.textContent.trim();
+                    } else {
+                        var input = celda.querySelector('input');
+                        if (input && input.value) {
+                            datos[tmp][index] = input.value;
+                        }
+                    }
+                });
+                tmp++;
+            }
+        });
+
+        // ajusto la cantidad de cabeceras
+        var cabeceras = datos[1].length - (datos[datos.length - 1].length - 1);
+        for (var i = 0; i < cabeceras - 1; i++) {
+            datos[datos.length - 2].unshift("");
+        }
+
+        // guardo los datos en el array principal
+        arrayDeDatos[contador] = datos;
+
+        contador++;
+    });
+
+    return arrayDeDatos;
+}
+
+/**
+ * Función que permite aplicar el dataTable a un tabla
+ * @param {string} id Id de la tabla a la que se le quiere aplicar el dataTable
+ * @return {Object} Objeto dataTable aplicado a esa tabla
+ */
+function crearDataTable(id) {
+    const dataTable = $(id).DataTable({
+
+        // Cambia el valor del filtrado por número de resultados
+        lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
+
+        // Cambia el texto mostrado por cada opción
+        language: {
+            "search": "Buscar:",
+            "lengthMenu": "Mostrando _MENU_ resultados por página",
+            "zeroRecords": "Ningún resultado coincide con esas credenciales",
+            "info": "Mostrando página <b>_PAGE_</b> de _PAGES_",
+            "infoEmpty": "No hay resultados disponibles",
+            "infoFiltered": "(filtrado de <b>_MAX_</b> resultados totales)"
+        }
+    });
+    return dataTable;
+}
+
+/**
+ * Función que crea una cookie, no me hace falta fecha de expiración ya que la borraré al usarla
+ * @param {string} nombre Nombre de la cookie que se creará
+ * @param {string} valor Valor de la cookie que se creará
+ */
+function setCookie(nombre, valor) {
+    document.cookie = nombre + "=" + valor + ";path=/";
+}
+
+/**
+ * Función que devuelve el valor de una cookie
+ * @param {string} nombre Nombre de la cookie
+ * @return {Object} Valor de la cookie, en el caso de no existir, devuelve null
+ */
+function getCookie(nombre) {
+    const cookieString = document.cookie;
+    const cookies = cookieString.split('; ');
+    for (let i = 0; i < cookies.length; i++) {
+        const cookie = cookies[i].split('=');
+        if (cookie[0] === nombre) {
+            return cookie[1];
+        }
+    }
+    return null;
+}
+
+/**
+* Función que borra una cookie en función del nombre
+* @param {string} nombre Nombre de la cookie que se borrará
+*/
+function borrarCookie(nombre) {
+    document.cookie = nombre + '=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+}
+
+/**
+ * Función que crea las celdas (td) de la tabla de productos
+ * @param {Array} filaTabla Datos de un producto
+ * @param {string} tipo Indica a qué parte de la tabla pertenecerá la celda (thead, tbody o tfoot)
+ * @param {Object} parte Parte de la tabla a la que pertenece la celda
+ */
+function crearCelda(filaTabla, tipo, parte) {
+
+    const tr = document.createElement('tr');
+
+    // Por cada producto obtenido, creo las celdas
+    filaTabla.forEach(info => {
+
+        let celda;
+        // en función de a qué parte de la tabla pertenece la celda, se crea de una manera o de otra
+        switch (tipo) {
+
+            case 'thead':
+                // al ser thead, creo th
+                celda = document.createElement('th');
+                celda.textContent = info;
+
+                // cambio el id en el th de Opciones 
+                if (info == 'OPCIONES') {
+                    celda.id = 'thOpciones';
+                }
+
+                tr.appendChild(celda);
+                break;
+
+            case 'tbody':
+                // al ser tbody, creo td
+                celda = document.createElement('td');
+
+                // en la columa de OPCIONES, creo los botones de editar y borrar en lugar de añadir el texto solamente
+                if (info != 'OPCIONES') {
+                    celda.textContent = info;
+                }
+                else {
+
+                    celda.id = 'tdOpciones';
+
+                    // creo el botón de borrar y le doy formato
+                    const btnBorrar = document.createElement('button');
+                    btnBorrar.className = 'btnBorrar';
+                    btnBorrar.innerHTML = '<i class="bi bi-trash-fill"></i>';
+
+                    // creo el botón de editar y le doy formato
+                    const btnEditar = document.createElement('button');
+                    btnEditar.className = 'btnEditar';
+                    btnEditar.innerHTML = '<i class="bi bi-pencil-fill"></i>';
+
+                    // añado el evento de borrado
+                    btnBorrar.addEventListener('click', function () {
+
+                        // paso el texto de confirmacion de borrado y todo lo necesario a la función que saca una confirmación por pantalla
+                        confirmarAccion(textoConfirmacion[1], 'borrar', btnBorrar);
+                    });
+
+                    // añado el evento de editado
+                    btnEditar.addEventListener('click', function () {
+
+                        // le paso el boton a la función que sustituye los tds cuya información se puede modificar de un producto por inputs
+                        colocarInputsEditar(btnEditar, 'editarProducto')
+
+                    });
+
+                    // los añado a la celda
+                    celda.appendChild(btnEditar);
+                    celda.appendChild(btnBorrar);
+                }
+                tr.appendChild(celda);
+
+                break;
+
+            case 'tfoot':
+                // al ser tfoot, creo los th
+                celda = document.createElement('th');
+
+                // si pertenecen a la columna de OPCIONES, creo inputs
+                if (info != 'OPCIONES') {
+                    // si son MARCA o CATEGORÍA, creo selects, ya que al ser foreign keys, es imprescindible que no haya error al insertar un nombre de marca que no existe
+                    if (info == 'MARCA' || info == 'CATEGORÍA') {
+
+                        const select = document.createElement('select');
+                        // cambio el id para poder acceder a los valores
+                        select.id = 'select' + info;
+
+                        // declaro variables que usaré en el if
+                        // aquí almacenaré a qué controlador llamar para obtener el array de marcas/categorías
+                        let obtenerArrayControlador = '';
+                        // opción marcada por defecto en los select
+                        let optionDefault = '';
+
+                        // llama a diferentes controladores en función de la celda
+                        if (info == 'MARCA') {
+                            // llamo al controlador que devuelve el array con todas las Marcas
+                            obtenerArrayControlador = 'obtenerArrayMarcas';
+
+                            // creo la opción por defecto de Marca
+                            optionDefault = document.createElement('option');
+                            optionDefault.textContent = 'MARCA';
+                            optionDefault.value = 0;
+                            optionDefault.disabled = true;
+
+                            // disabled para que no se pueda marcar
+                            optionDefault.selected = true;
+
+                            select.appendChild(optionDefault);
+                        }
+                        else if (info == 'CATEGORÍA') {
+                            // llamo al controlador que devuelve el array con todas las Categorías
+                            obtenerArrayControlador = 'obtenerArrayCategorias';
+
+                            // creo la opción por defecto de Categoría
+                            optionDefault = document.createElement('option');
+                            optionDefault.textContent = 'CATEGORÍA';
+                            optionDefault.value = 0;
+
+                            // disabled para que no se pueda marcar
+                            optionDefault.disabled = true;
+                            optionDefault.selected = true;
+
+                            select.appendChild(optionDefault);
+                        }
+
+                        // realizo la petición asíncrona al controlador definido en obtenerArrayControlador
+                        $.ajax({
+                            type: "POST",
+                            url: "GestionarProductos/" + obtenerArrayControlador,
+                            dataType: "JSON",
+                            success: function (arrayRespuesta) {
+                                // por cada marca/categoría obtenida
+                                arrayRespuesta.forEach(fila => {
+                                    // creo el opction y lo añado al select
+                                    const option = document.createElement('option');
+                                    option.value = fila['id'];
+                                    option.textContent = fila['nombre'];
+
+                                    select.appendChild(option);
+                                });
+                                celda.appendChild(select);
+
+                            },
+                            error: function (error) {
+                                console.log(error)
+                            }
+                        });
+                    }
+                    else {
+                        // si se trata del resto de información que se puede editar, ya que no son FK
+                        // creo inputs normales
+                        const input = document.createElement('input');
+                        // de placeholder dejo el nombre de la columna
+                        input.placeholder = info;
+                        // cambio el id para porder acceder a ellos más fácilmente
+                        input.id = 'input' + info;
+
+                        // cambio la anchura tanto de la celda como del input
+                        if (info == 'ID' || info == 'PRECIO') {
+                            celda.style.width = '10%';
+                            input.style.width = '82%';
+                        }
+                        celda.appendChild(input);
+                    }
+                }
+                // si se trata de la columna de opciones, añado el botón de insertar fila
+                else {
+                    const btnInsertar = document.createElement('button');
+                    btnInsertar.id = 'btnInsertar';
+                    btnInsertar.innerHTML = 'Crear producto';
+                    btnInsertar.style.width = '100%';
+                    celda.appendChild(btnInsertar);
+                }
+                tr.appendChild(celda);
+
+                break;
+        }
+    });
+    parte.appendChild(tr);
+
+}
+
+/**
+ * Función que carga la tabla de productos
+ * @param {boolean} cargoGerente Boolean que determina si el usuario logeado tiene la sesión de Gerente, para mostrar los controles o no
+ */
+function cargarTablaProductos(cargoGerente) {
+    // petición asíncrona que obtiene el array de productos de la base de datos
+    $.ajax({
+        type: "POST",
+        url: "GestionarProductos/obtenerArrayProductos",
+        // paso el boolean de cargoGerente para que me devuelva las columnas y los datos necesarios en función del cargo
+        data: { cargoGerente: cargoGerente },
+        dataType: "JSON",
+        success: function (arrayProductosTabla) {
+
+
+            // creo la tabla
+            const tablaProductos = document.createElement('table');
+            tablaProductos.id = 'tablaProductos';
+            tablaProductos.className = 'display';
+            tablaProductos.style.width = '100%';
+
+            // creo thead, tbody y tfoot
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+            const tfoot = document.createElement('tfoot');
+
+            tablaProductos.appendChild(thead);
+            tablaProductos.appendChild(tbody);
+            tablaProductos.appendChild(tfoot);
+
+            if (cargoGerente) {
+                // formulario cargar archivo
+                const inputCargarStock = document.querySelector('#inputCargarStock');
+
+                // div que contendrá los botones de acciones para el gerente
+                const divBotones = document.createElement('div');
+                divBotones.id = 'divBotones';
+                containerTablaProductos.appendChild(divBotones);
+
+                // creo el botón de exportar a excel
+                const btnExportar = document.createElement('button');
+                btnExportar.innerHTML = 'Exportar productos a excel <i class="bi bi-file-earmark-spreadsheet-fill"></i>';
+                btnExportar.id = 'btnExportar';
+
+                // añado el evento de exportar a excel
+                btnExportar.addEventListener('click', function () {
+                    exportarExcel(dataTableProductos, '#tablaProductos', 'Tabla de productos');
+                });
+                divBotones.appendChild(btnExportar);
+
+                // creo el input de carga de ficheros, para actualizar stocks
+                const btnCargarStock = document.createElement('button');
+                btnCargarStock.innerHTML = 'Cargar stock de productos con Excel <i class="bi bi-cloud-plus-fill"></i>';
+                btnCargarStock.id = 'btnCargarStock';
+
+                // al hacer click en el botón, se fuerza el click en el input para sacar la ventana de cargar archivo
+                btnCargarStock.addEventListener('click', function () {
+                    inputCargarStock.click();
+                });
+
+                divBotones.appendChild(btnCargarStock);
+
+                // añado el evento change al formulario
+                inputCargarStock.addEventListener('change', function () {
+
+                    // excel cargado en el formulario
+                    let excel = inputCargarStock.files[0];
+
+                    // si existe el excel, realizo la petición al servidor
+                    if (excel) {
+
+                        // form data con los datos del formulario
+                        let formData = new FormData();
+                        formData.append('excel', excel)
+
+                        // petición asíncrona que lee el excel y actualiza el stock
+                        $.ajax({
+                            type: "POST",
+                            url: "GestionarProductos/cargarStock",
+                            data: formData,
+                            processData: false,  // indica a jQuery que no procese los datos
+                            contentType: false, // indica a jQuery que no defina el content type
+                            dataType: 'JSON',
+                            success: function (response) {
+
+                                if (response['status'] == 'success') {
+                                    // creo una cookie para que, al recargar la página para actualizar los datos, se muestre una alerta
+                                    setCookie('accion', response['message']);
+                                    // recargo la página
+                                    window.location.reload();
+                                }
+                                else {
+                                    // notifico el problema
+                                    notificar('Ha habido un problema', response['message']);
+                                }
+                            },
+                            error: function (error) {
+                                console.log(error);
+                            }
+                        });
+                    }
+
+                    // Vacío el formulario para que, al subir un archivo con el mismo nombre, también lo detecte
+                    inputCargarStock.value = '';
+                });
+            }
+            containerTablaProductos.appendChild(tablaProductos);
+
+            // por cada producto, creo las filas y las celdas
+            for (let i = 0; i < arrayProductosTabla.length; i++) {
+                // cabeceras de la tabla, las meto en thead
+                if (i == 0) {
+                    crearCelda(arrayProductosTabla[i], 'thead', thead);
+                    // creo también el tfoot (necesita los mismos datos que el thead para crearse)
+                    if (cargoGerente) {
+                        crearCelda(arrayProductosTabla[i], 'tfoot', tfoot);
+                    }
+                }
+                // celdas del tbody
+                else {
+                    crearCelda(arrayProductosTabla[i], 'tbody', tbody);
+                }
+            }
+            // aplico dataTable a la tabla de productos
+            dataTableProductos = crearDataTable('#tablaProductos');
+            containerTablaProductos.style.display = 'block';
+            containerBtnVolver.style.display = 'block';
+
+            // aplico el evento a btnInsertar
+            if (cargoGerente) {
+                document.querySelector('#btnInsertar').addEventListener('click', function () {
+
+                    let selectMarca = document.querySelector('#selectMARCA');
+                    let selectCategoria = document.querySelector('#selectCATEGORÍA');
+
+                    // si alguno de los selects está marcado con el valor por defecto (value = 0)
+                    if (selectMarca.value == 0 || selectCategoria.value == 0) {
+                        // dialog de JQuery UI, notifica que hay que seleccionar una marca y categoría
+                        notificar('Ha habido un problema', '<p>Por favor, selecciona <b>marca</b> y <b>categoría</b> del producto que quieres insertar</p>');
+
+                    }
+                    else {
+                        // llamo a la función que saca una confirmación por pantalla
+                        confirmarAccion(textoConfirmacion[0], 'insertar', btnInsertar);
+                    }
+
+                })
+
+                const btnMostrarMarcas = document.createElement('button');
+                btnMostrarMarcas.className = 'btnMostrar';
+                btnMostrarMarcas.id = 'btnMostrarMarcas';
+                btnMostrarMarcas.innerText = 'Mostrar tabla de marcas';
+                btnMostrarMarcas.addEventListener('click', function () {
+                    cargarTablaMarcasCategorias('marcas');
+                });
+
+
+                const btnMostrarCategorias = document.createElement('button');
+                btnMostrarCategorias.className = 'btnMostrar';
+                btnMostrarCategorias.id = 'btnMostrarCategorias';
+                btnMostrarCategorias.innerText = 'Mostrar tabla de categorías';
+                btnMostrarCategorias.addEventListener('click', function () {
+                    cargarTablaMarcasCategorias('categorias');
+                });
+
+                containerTablaProductos.appendChild(btnMostrarMarcas);
+                containerTablaProductos.appendChild(btnMostrarCategorias);
+
+                // si se ha hecho algún cambio en marcas/categorías, hay una cookie, vuelvo a mostrar la tabla correspondiente
+                let cambioMarcaCategoria = '';
+                if (cambioMarcaCategoria = getCookie('cambioMarcaCategoria')) {
+                    // si es de marcas, fuerzo el click en el botón de marcas
+                    if (cambioMarcaCategoria == 'marca') {
+                        document.querySelector('#btnMostrarMarcas').click();
+                    }
+                    // si es de categorías, fuerzo el click en el botón de categorías
+                    else {
+                        document.querySelector('#btnMostrarCategorias').click();
+                    }
+                    borrarCookie('cambioMarcaCategoria');
+                }
+            }
+        },
+        error: function (error) {
+            console.log(error)
+        }
+    });
+}
+
+/**
+ * Función que hace una petición asíncrona para generar un excel y lo descarga
+ * @param {Object} dataTable dataTable de la tabla de la que se quiere generar el excel
+ * @param {string} idTabla id de la tabla de la que se quiere generar el excel
+ * @param {string} archivo nombre y título que tendrá el excel
+ */
+function exportarExcel(dataTable, idTabla, archivo) {
+    // destruyo el dataTable para obtener todos los valores de las filas
+    dataTable.destroy();
+
+    // obtengo el array de datos de todas las filas
+    let datosTabla = obtenerArrayTabla(idTabla);
+
+    // vuelvo a crear el dataTable
+    dataTableProductos = crearDataTable(idTabla);
+
+    // petición asíncrona que genera el excel y devuelve la ruta para descargarlo
+    $.ajax({
+        type: "POST",
+        url: "FuncionesGenerales/generarExcel",
+        // le paso la ultimaColumna = J ya que el excel empezará en la C y son 8 columnas
+        data: { 'datosTabla': JSON.stringify(datosTabla), archivo: archivo, ultimaColumna: 'J' },
+        dataType: "JSON",
+        success: function (response) {
+            // abro la ruta del excel para descargarlo
+            window.location.href = response;
+        },
+        error: function (error) {
+            console.log(error);
+        }
+    });
+}
+
+
+/**
+ * Función que obtiene las marcas de la BD y las carga en una tabla con dataTable
+ * @param {string} tabla indica si hay que cargar la tabla marcas o categorías
+ */
+function cargarTablaMarcasCategorias(tabla) {
+
+    let controlador;
+    let cabecerasTabla;
+
+    // llamo a un controlador u otro en función de qué tabla se quiere cargar
+    if (tabla == 'marcas') {
+        controlador = 'obtenerArrayMarcas';
+        cabecerasTabla = [
+            'ID_MARCA',
+            'NOMBRE_MARCA',
+            'OPCIONES'
+        ];
+    }
+    else {
+        controlador = 'obtenerArrayCategorias';
+        cabecerasTabla = [
+            'ID_CATEGORIA',
+            'NOMBRE_CATEGORIA',
+            'OPCIONES'
+        ];
+    }
+
+    $.ajax({
+        type: "POST",
+        url: "GestionarProductos/" + controlador,
+        dataType: "JSON",
+        success: function (arrayTabla) {
+
+            // quito el container y la tabla que ya habían
+            if (document.querySelector('#containerMarcasCategorias')) {
+                document.querySelector('#containerMarcasCategorias').remove();
+            }
+
+
+            // creo el contenedor de la tabla
+            const containerMarcasCategorias = document.createElement('div');
+            containerMarcasCategorias.className = 'container';
+            containerMarcasCategorias.id = 'containerMarcasCategorias';
+            document.body.appendChild(containerMarcasCategorias);
+
+            // creo un botón de cerrado para quitar el container 
+            // creo el container y lo añado al container de la tabla
+            const containerBtnCerrar = document.createElement('div');
+            containerBtnCerrar.id = 'containerBtnCerrar';
+            if (tabla == 'marcas') {
+                containerBtnCerrar.innerHTML = '<h5>Tabla marcas</h5>'
+            }
+            else {
+                containerBtnCerrar.innerHTML = '<h5>Tabla categorías</h5>'
+            }
+            containerMarcasCategorias.appendChild(containerBtnCerrar);
+
+            // creo el botón de cerrado y lo añado su container
+            const btnCerrar = document.createElement('button');
+            btnCerrar.innerHTML = '<i class="bi bi-x"></i>';
+            btnCerrar.className = 'btnCerrar';
+
+            btnCerrar.addEventListener('click', function () {
+                containerMarcasCategorias.remove();
+            });
+            containerBtnCerrar.appendChild(btnCerrar);
+
+
+
+            // creo la tabla
+            const tablaMarcasCategorias = document.createElement('table');
+            tablaMarcasCategorias.id = 'tablaMarcasCategorias';
+            tablaMarcasCategorias.className = 'display';
+            tablaMarcasCategorias.style.width = '100%';
+
+            // creo el thead, tbody, tfoot y los añado a la tabla
+            const thead = document.createElement('thead');
+            const tbody = document.createElement('tbody');
+            const tfoot = document.createElement('tfoot');
+
+            tablaMarcasCategorias.appendChild(thead);
+            tablaMarcasCategorias.appendChild(tbody);
+            tablaMarcasCategorias.appendChild(tfoot);
+
+            // añado la tabla al contenedor
+            containerMarcasCategorias.appendChild(tablaMarcasCategorias);
+
+            // vuelvo a añadir el container del botón de volver para que salga abajo del todo
+            document.body.appendChild(document.body.querySelector('#containerBtnVolver'));
+
+            // creo los th del thead
+            crearCelda(cabecerasTabla, 'thead', thead);
+            crearCelda(cabecerasTabla, 'tfoot', tfoot);
+
+            // recorro el array de marcas, le sumo 1 para la columna de opciones
+            arrayTabla.forEach(fila => {
+                const tr = document.createElement('tr');
+                crearTd(tr, fila.id, tabla);
+                crearTd(tr, fila.nombre, tabla);
+                crearTd(tr, 'opciones', tabla);
+                tbody.appendChild(tr);
+            })
+
+            // aplico dataTable a la tabla de productos
+            let dataTableMarcasCategorias = crearDataTable('#tablaMarcasCategorias');
+            
+            tablaMarcasCategorias.querySelector('#btnInsertar').innerHTML = 'Crear ' + tabla.slice(0, -1);;
+
+            // aplico el evento a btnInsertar
+            tablaMarcasCategorias.querySelector('#btnInsertar').addEventListener('click', function () {
+                console.log(tablaMarcasCategorias.querySelector('#btnInsertar'));
+                if (tabla == 'marcas') {
+                    const inputId = document.querySelector('#inputID_MARCA');
+                    const inputNombre = document.querySelector('#inputNOMBRE_MARCA');
+
+                    // si alguno de los inputs está vacío
+                    if (inputId.value == '' || inputNombre == '') {
+                        // dialog de JQuery UI, notifica que hay que rellenar todos los campos
+                        notificar('Ha habido un problema', '<p>Por favor, rellena <b>todos los campos</b> para insertar una marca</p>');
+                    }
+
+                    else {
+                        // llamo a la función que saca una confirmación por pantalla
+                        confirmarAccion('Estás seguro de que quieres insertar esta marca?', 'insertarMarca', btnInsertar);
+                    }
+                }
+                else {
+                    const inputId = document.querySelector('#inputID_CATEGORIA');
+                    const inputNombre = document.querySelector('#inputNOMBRE_CATEGORIA');
+
+
+                    // si alguno de los inputs está vacío
+                    if (inputId.value == '' || inputNombre == '') {
+                        // dialog de JQuery UI, notifica que hay que rellenar todos los campos
+                        notificar('Ha habido un problema', '<p>Por favor, rellena <b>todos los campos</b> para insertar una categoría</p>');
+                    }
+
+                    else {
+                        // llamo a la función que saca una confirmación por pantalla
+                        confirmarAccion('Estás seguro de que quieres insertar esta categoría?', 'insertarCategoria', btnInsertar);
+                    }
+                }
+
+            })
+
+
+        }
+    });
+
+
+}
+
+/**
+ * Función que crea los td de la tabla marcas y categorias
+ * @param {Object} tr tr en el que irá el td
+ * @param {string} dato dato que mostrará el td
+ * @param {string} tabla indica si ese botón borra una marca o una categoría
+ */
+function crearTd(tr, dato, tabla) {
+    // si no pertenecen a la columna de opciones
+    if (dato != 'opciones') {
+        // creo el td, meto el dato y lo añado al tr
+        const td = document.createElement('td');
+        td.innerText = dato;
+        tr.appendChild(td);
+    }
+    // si pertenece a la columna de opciones, creo los botones de opciones
+    else {
+        // creo el td
+        const td = document.createElement('td');
+        // creo el botón de editar
+        const btnEditar = document.createElement('button');
+        btnEditar.className = 'btnEditar';
+        btnEditar.innerHTML = '<i class="bi bi-pencil-fill"></i>'
+
+        // le aplico el evento correspondiente
+        btnEditar.addEventListener('click', function () {
+            if (tabla == 'marcas') {
+                colocarInputsEditar(btnEditar, 'editarMarca');
+            }
+            else {
+                colocarInputsEditar(btnEditar, 'editarCategoria');
+
+            }
+        });
+
+        // creo el botón de borrar
+        const btnBorrar = document.createElement('button');
+        btnBorrar.className = 'btnBorrar';
+        btnBorrar.innerHTML = '<i class="bi bi-trash-fill"></i>';
+
+
+        // le aplico el evento correspondiente
+        btnBorrar.addEventListener('click', function () {
+            if (tabla == 'marcas') {
+                confirmarAccion('¿Estás seguro de que quieres borrar esta marca?', 'borrarMarca', btnBorrar);
+            }
+            else if (tabla == 'categorias') {
+                confirmarAccion('¿Estás seguro de que quieres borrar esta categoría?', 'borrarCategoria', btnBorrar);
+
+            }
+        });
+
+        td.appendChild(btnEditar);
+        td.appendChild(btnBorrar);
+
+        tr.appendChild(td);
+    }
+
+}
+
+
+/**
+ * Función que saca una notificación con JQuery UI
+ * @param {string} tituloNotificacion Título que tendrá el cuadro de diálogo
+ * @param {string} textoNotificacion Texto que tendrá el cuerpo del cuadro de diálogo
+ */
+function notificar(tituloNotificacion, textoNotificacion) {
+
+    // cambio el titulo y el texto en función de lo que se pasa por parámetro
+    document.querySelector('#notificacion').title = tituloNotificacion;
+    document.querySelector('#notificacion').innerHTML = textoNotificacion;
+
+    // se abre una notificación de la acción que se ha realizado mediante JQuery UI dialog
+    $(function () {
+        $("#notificacion").dialog({
+            modal: true,
+            buttons: {
+                Ok: function () {
+                    // si hace click en Ok, se cierra la ventana
+                    $(this).dialog("close");
+                }
+            }
+        });
+    });
+}
+
+/**
+ * Función que saca una confirmación con JQuery UI
+ * @param {string} textoConfirmacion Texto que tendrá el cuerpo del cuadro de diálogo
+ * @param {string} accion Indica a qué función llamar al hacer click en confirmar
+ * @param {Object} btn Es el botón que se ha clickado, es necesario para obtener los inputs de la fila a la que pertenece el botón
+ */
+function confirmarAccion(textoConfirmacion, accion, btn) {
+
+    // coloco el texto en función de la accion que se quiere realizar
+    document.querySelector('#confirmarAccion').innerHTML = textoConfirmacion;
+
+    // se abre la confirmacion de la accion que se va a realizar mediante JQuery UI dialog
+    $(function () {
+        $("#confirmarAccion").dialog({
+            modal: true,
+            buttons: {
+
+                // se llama a la función dependiendo de la accion pasada por parámetro
+                Confirmar: function () {
+                    switch (accion) {
+                        case 'insertar':
+                            // inserta la fila en la BD
+                            insertarProductoBD();
+                            break;
+                        case 'borrar':
+                            // borra la fila en la BD
+                            // tengo que pasarle el btn para poder acceder a los inputs de esa fila
+                            borrarProductoBD(btn);
+                            break;
+                        case 'editar':
+                            // edita la fila en la BD
+                            editarProductoBD();
+                            break;
+                        case 'editarMarca':
+                            // edita la marca de la BD
+                            editarMarcaCategoriaBD('marca');
+                            break;
+                        case 'borrarMarca':
+                            // borra la marca de la BD
+                            // tengo que pasarle el btn para poder acceder a los inputs de esa fila
+                            borrarMarcaCategoriaBD(btn, 'marca');
+                            break;
+
+                        case 'editarCategoria':
+                            // edita la categoria de la BD
+                            editarMarcaCategoriaBD('categoria');
+                            break;
+                        case 'borrarCategoria':
+                            // borra la categoria de la BD
+                            // tengo que pasarle el btn para poder acceder a los inputs de esa fila
+                            borrarMarcaCategoriaBD(btn, 'categoria');
+                            break;
+
+                        case 'insertarMarca':
+                            // inserta una marca en la base de datos
+                            insertarMarcaCategoriaBD('marca');
+                            break;
+                        case 'insertarCategoria':
+                            // inserta una categoría en la base de datos
+                            insertarMarcaCategoriaBD('categoria');
+                            break;
+                    }
+
+                    // al realizar la acción, cierro el diáogo
+                    $(this).dialog("close");
+                },
+                // se cierra el diálogo
+                Cancelar: function () {
+                    $(this).dialog("close");
+                }
+            }
+        });
+    });
+}
+
+/**
+ * Función que edita una marca o una categoria en la BD
+ * @param {Object} tabla indica si tengo que insertar en la tabla marcas o categorias
+ */
+function insertarMarcaCategoriaBD(tabla) {
+    let inputId;
+    let inputNombre;
+    if (tabla == 'marca') {
+        inputId = document.querySelector('#inputID_MARCA');
+        inputNombre = document.querySelector('#inputNOMBRE_MARCA');
+    }
+    else {
+        inputId = document.querySelector('#inputID_CATEGORIA');
+        inputNombre = document.querySelector('#inputNOMBRE_CATEGORIA');
+    }
+
+    // petición asíncrona que inserta una marca o una categoría en la BD (dependiendo de los parámetros pasados por POST)
+    $.ajax({
+        type: "POST",
+        url: "GestionarProductos/insertarMarcaCategoriaBD",
+        // paso los valores de los inputs
+        data: { id: inputId.value, nombre: inputNombre.value, tabla: tabla },
+        dataType: "JSON",
+        success: function (response) {
+            // si es success, la inserción se ha realizado con éxito, saco una notificación informando al usuario con el mensaje
+            if (response.status == 'success') {
+                // creo una cookie para notificar que la inserción se ha realizado con éxito
+                setCookie('accion', response.message);
+                setCookie('cambioMarcaCategoria', tabla);
+                // recargo la página
+                window.location.reload();
+            }
+            // si es error, algo ha fallado al realizar la inserción, lo notifico y muestro el mensaje
+            else if (response.status == 'error') {
+                notificar('Ha habido un problema', response.message);
+            }
+
+        },
+        error: function (error) {
+            console.log(error);
+        }
+    });
+}
+
+/**
+ * Función que inserta un producto con los datos de los inputs del tfoot en la BD
+ */
+function insertarProductoBD() {
+    // guardo los inputs del tfoot en variables para tratar la inromación más cómodamente
+    let inputId = document.querySelector('#inputID');
+    let inputNombre = document.querySelector('#inputNOMBRE');
+    let selectMarca = document.querySelector('#selectMARCA');
+    let selectCategoria = document.querySelector('#selectCATEGORÍA');
+    let inputPrecio = document.querySelector('#inputPRECIO');
+    let inputCoste = document.querySelector('#inputCOSTE');
+    let inputStock = document.querySelector('#inputSTOCK');
+    let inputStockMinimo = document.querySelector('#inputSTOCK_MÍNIMO');
+
+    // guardo los valores de los inputs en un array
+    let datosFila = [
+        inputId.value,
+        inputNombre.value,
+        selectMarca.value,
+        selectCategoria.value,
+        inputPrecio.value,
+        inputCoste.value,
+        inputStock.value,
+        inputStockMinimo.value
+    ]
+
+    // si hay campos sin rellenar, lo notifico
+    if (inputId.value == '' || inputNombre.value == '' || inputPrecio.value == '' || inputCoste.value == '' || inputStock.value == '' || inputStockMinimo.value == '') {
+        notificar('Ha habido un problema', '<p>Por favor, <b>rellena todos los campos</b> antes de insertar una nueva fila</p>')
+    }
+    // todas las comprobaciones del lado cliente hechas, hago una petición para hacer las comprobaciones con la BD e insertar la fila
+    else {
+        $.ajax({
+            type: "POST",
+            url: "GestionarProductos/insertarProductoBD",
+            // paso los valores de los inputs
+            data: { datosFila: datosFila },
+            dataType: "JSON",
+            success: function (response) {
+                // si es success, la inserción se ha realizado con éxito, saco una notificación informando al usuario con el mensaje
+                if (response.status == 'success') {
+                    // creo una cookie para notificar que la inserción se ha realizado con éxito
+                    setCookie('accion', response.message)
+                    // recargo la página
+                    window.location.reload();
+                }
+                // si es error, algo ha fallado al realizar la inserción, lo notifico y muestro el mensaje
+                else if (response.status == 'error') {
+                    notificar('Ha habido un problema', response.message);
+                }
+
+            },
+            error: function (error) {
+                console.log(error);
+            }
+        });
+    }
+
+}
+
+
+/**
+ * Función borra un producto de la base de datos
+ * @param {Object} btnBorrar es el botón que se ha clickado, es necesario para obtener los valores de los tds (en este caso id y nombre) de esa fila
+ */
+function borrarProductoBD(btnBorrar) {
+
+    // obtengo el valor del td correspondiente a la ID y al nombre del producto
+    let idProducto = btnBorrar.parentNode.parentNode.getElementsByTagName('td')[0].innerText;
+    // el nombre lo usaré para notificar qué producto se ha borrado
+    let nombreProducto = btnBorrar.parentNode.parentNode.getElementsByTagName('td')[1].innerText;
+
+    // hago una petición asíncrona al controlador que borra el producto de la base de datos
+    $.ajax({
+        type: "POST",
+        url: "GestionarProductos/borrarProductoBD",
+        // paso el id y el nombre del producto
+        data: { idProducto: idProducto, nombreProducto: nombreProducto },
+        dataType: "JSON",
+        success: function (response) {
+            // si es success, el borrado se ha realizado con éxito
+            if (response.status == 'success') {
+                // creo una cookie para notificar que el producto se ha borrado con éxito
+                setCookie('accion', response.message)
+                // recargo la página para que se vuelva a cargar la tabla
+                window.location.reload();
+            }
+            // si es error, algo ha fallado al borrar el producto, lo notifico y saco el mensaje
+            else {
+                notificar('Ha habido un problema', response.message);
+            }
+        },
+        error: function (error) {
+            console.log(error)
+        }
+    });
+}
+
+/**
+* Función edita un producto de la base de datos
+*/
+function editarProductoBD() {
+
+
+    // obtengo todos los inputs que corresponden a la edición
+    const inputsEditar = document.querySelectorAll('.inputEditar');
+
+    // el id no se obtiene de un input, por lo que lo obtengo por el innerText de su celda
+    const idProductoEditado = inputsEditar[0].parentNode.parentNode.querySelector('td').innerText;
+
+    // array que guardará todos los datos que se quieren editar y se enviará al controlador encargado de editar la fila
+    let datosEditados = [
+        idProductoEditado
+    ];
+
+    // voy añadiendo los datos de los inputs en el array
+    inputsEditar.forEach(inputEditar => {
+        datosEditados.push(inputEditar.value);
+    });
+
+    // petición asíncrona que llama al controlador que edita el producto de la BD
+    $.ajax({
+        type: "POST",
+        url: "GestionarProductos/editarProductoBD",
+        // paso el array con los datos del producto que se quiere editar
+        data: { datosEditados: datosEditados },
+        dataType: "JSON",
+        success: function (response) {
+            // si es success, la edición se ha realizado con éxito
+            if (response.status == 'success') {
+                // creo una cookie que permitirá notificar que el producto ha sido editado
+                setCookie('accion', response.message);
+                // recargo la página para que se vuelvan a cargar los datos de la tabla
+                window.location.reload();
+            }
+            // si ha sido error, lo notifico y saco el mensaje de error
+            else {
+                notificar('Ha habido un problema', response.message);
+            }
+        },
+        error: function (error) {
+            console.log(error);
+        }
+    });
+}
+
+/**
+ * Función que edita una marca o una categoria en la BD
+ * @param {Object} btnBorrar es el botón que se ha clickado, es necesario para obtener los valores de los tds (en este caso id y nombre) de esa fila
+ * @param {Object} tabla indica si tengo que borrar en la tabla marcas o categorias
+ */
+function borrarMarcaCategoriaBD(btnBorrar, tabla) {
+
+    // obtengo el valor del td correspondiente a la ID y al nombre del producto
+    let id = btnBorrar.parentNode.parentNode.getElementsByTagName('td')[0].innerText;
+    // el nombre lo usaré para notificar qué producto se ha borrado
+    let nombre = btnBorrar.parentNode.parentNode.getElementsByTagName('td')[1].innerText;
+
+    // petición asíncrona que borra una categoría/una marca de la BD si no hay ningún producto con esa marca/categoría
+    $.ajax({
+        type: "POST",
+        url: "GestionarProductos/borrarMarcaCategoriaBD",
+        data: { id: id, nombre: nombre, tabla: tabla },
+        dataType: "JSON",
+        success: function (response) {
+            // si es success, el borrado se ha realizado con éxito
+            if (response.status == 'success') {
+                // creo una cookie para notificar que el producto se ha borrado con éxito
+                setCookie('accion', response.message);
+                setCookie('cambioMarcaCategoria', tabla);
+                // recargo la página para que se vuelva a cargar la tabla
+                window.location.reload();
+            }
+            // si es error, algo ha fallado al borrar el producto, lo notifico y saco el mensaje
+            else {
+                notificar('Ha habido un problema', response.message);
+            }
+        },
+        error: function (error) {
+            console.log(error);
+        }
+    });
+}
+
+/**
+ * Función que edita una marca o una categoria en la BD
+ * @param {string} tabla indica si hay que editar la tabla de marcas o de categorias
+ */
+function editarMarcaCategoriaBD(tabla) {
+
+    // obtengo todos el input correspondiente a la edición
+    const inputEditar = document.querySelector('.inputEditar');
+    const nuevoNombre = inputEditar.value;
+
+    // el id no se obtiene de un input, por lo que lo obtengo por el innerText de su celda
+    const idFilaEditada = inputEditar.parentNode.parentNode.querySelector('td').innerText;
+
+    $.ajax({
+        type: "POST",
+        url: "GestionarProductos/editarMarcaCategoriaBD",
+        data: { idFilaEditada: idFilaEditada, nuevoNombre: nuevoNombre, tabla: tabla },
+        dataType: "JSON",
+        success: function (response) {
+            // si es success, la edición se ha realizado con éxito
+            if (response.status == 'success') {
+                // creo una cookie que permitirá notificar que el producto ha sido editado
+                setCookie('accion', response.message);
+                setCookie('cambioMarcaCategoria', tabla);
+                // recargo la página para que se vuelvan a cargar los datos de la tabla
+                window.location.reload();
+            }
+            // si ha sido error, lo notifico y saco el mensaje de error
+            else {
+                notificar('Ha habido un problema', response.message);
+            }
+        }
+    });
+}
+
+/**
+ * Función que coloca los inputs en las celdas de la fila a la que se ha clickado el botón de editar
+ * @param {Object} btnEditar es el botón que se ha clickado, me hace falta para obtener la fila a la que pertenece el botón
+ * @param {string} accion indica si el botón de confirmar edita en la tabla de prodocuctos, marcas o categorias
+ */
+function colocarInputsEditar(btnEditar, accion) {
+    // obtengo el tr que corresponde al producto que se quiere editar
+    let fila = btnEditar.parentNode.parentNode;
+
+    // obtengo todas las celdas de esa fila (de ese producto)
+    let celdas = fila.getElementsByTagName('td');
+
+    // array con los valores de esa fila, para poder sustituir el innerText por inputs con el valor que estaba
+    let valoresProducto = [];
+
+    // resto 1 porque no me interesa la columna de OPCIONES
+    for (let i = 0; i < celdas.length - 1; i++) {
+        valoresProducto.push(celdas[i].innerText);
+    }
+
+    // empiezo en 1 y resto 1 porque no quiero poner inputs en las columnas de ID y OPCIONES
+    for (let i = 1; i < celdas.length - 1; i++) {
+
+        // si se trata de la columna de marcas y categorias, meto un select option para que no dé lugar a error
+        if (i == 2 || i == 3) {
+
+            // en funcion de si es marca o categoría, pillo un select u otro
+            let selectEdicion;
+            if (i == 2) {
+                selectEdicion = document.querySelector('#selectMARCA');
+            }
+            else if (i == 3) {
+                selectEdicion = document.querySelector('#selectCATEGORÍA');
+            }
+            // tengo que clonarlo para hacer el appendChild y que no se borre el que ya estaba
+            let selectEdicionClonado = selectEdicion.cloneNode(true);
+            selectEdicionClonado.className = 'inputEditar';
+            selectEdicionClonado.id = '';
+
+            // cojo todos los options de ese select para dejar seleccionado el valor de ese producto
+            let optionsEdicion = selectEdicionClonado.querySelectorAll('option');
+
+            // sobre todos los options, si el innerText coincide con el valor del producto, lo selecciono
+            for (let j = 0; j < optionsEdicion.length; j++) {
+
+                if (optionsEdicion[j].innerText === valoresProducto[i]) {
+                    optionsEdicion[j].selected = true;
+                    break; // salgo del bucle en cuanto encuentro ese valor
+                }
+            }
+
+            // vacío el contenido
+            celdas[i].innerHTML = '';
+            celdas[i].appendChild(selectEdicionClonado);
+
+        }
+        // si son el resto de columnas, al no ser FKs, creo inputs normales
+        else {
+            celdas[i].innerHTML = '<input type="text" class="inputEditar" value="' + valoresProducto[i] + '">';
+        }
+    }
+
+    // cambio los botones de opciones que ya estaban por los de Confirmar y Cancelar edición
+    let tdOpciones = btnEditar.parentNode;
+
+    // quito los botones que ya estaban para meter los de confirmación y cancelación de edición
+    let btnBorrar = tdOpciones.querySelector(".btnBorrar");
+    btnBorrar.remove();
+    btnEditar.remove();
+
+    // creo el nuevo botón de confirmar cambios
+    const btnConfirmarCambios = document.createElement('button');
+    btnConfirmarCambios.className = 'btnConfirmarCambios';
+    // le meto un bootstrap icon
+    btnConfirmarCambios.innerHTML = '<i class="bi bi-check-circle-fill"></i>';
+
+    // creo el nuevo botón de cancelar cambios
+    const btnCancelarCambios = document.createElement('button');
+    btnCancelarCambios.className = 'btnCancelarCambios';
+    // le meto un bootstrap icon
+    btnCancelarCambios.innerHTML = '<i class="bi bi-x-circle-fill"></i>';
+
+    // añado los eventos
+    btnConfirmarCambios.addEventListener('click', function () {
+
+        // saco un diálogo de confirmación por pantalla
+        if (accion == 'editarProducto') {
+            confirmarAccion(textoConfirmacion[2], 'editar', btnEditar);
+        }
+        else if (accion == 'editarMarca') {
+            confirmarAccion(textoConfirmacion[2], 'editarMarca', btnEditar);
+        }
+        else if (accion == 'editarCategoria') {
+            confirmarAccion(textoConfirmacion[2], 'editarCategoria', btnEditar);
+
+        }
+    })
+
+    btnCancelarCambios.addEventListener('click', function () {
+        // cancelo los cambios
+        cancelarCambios();
+    })
+
+    // añado los botones a la celda de opciones
+    tdOpciones.appendChild(btnConfirmarCambios);
+    tdOpciones.appendChild(btnCancelarCambios);
+}
+
+/**
+ * Función que cancela los cambios al editar un producto (quita todos los inputs que se colocaron al pulsar en editar)
+ */
+function cancelarCambios() {
+
+    // cambio el cuerpo del diálogo de confirmación
+    document.querySelector('#confirmarAccion').innerHTML = '<p>¿Estás seguro de que quieres <b>cancelar la edición</b> de este producto?</p>';
+
+    // no utilizo la función de confirmar acción porque me interesa que esta tenga otros botones
+    $(function () {
+        $("#confirmarAccion").dialog({
+            modal: true,
+            buttons: {
+                // cierra el diálogo
+                'Seguir editando': function () {
+                    $(this).dialog("close");
+                },
+                // recarga la página para quitar todos los inputs
+                'Cancelar edición': function () {
+                    window.location.reload();
+                }
+            }
+        });
+    });
+}
+
+/**
+ * Función que crea el contenedor de las tablas de marcas y categorias
+ */
+function cargarContainerMarcasCategorias() {
+    // creo el div
+    const containerMarcasCategorias = document.createElement('div');
+
+    // defino la clase y el id
+    containerMarcasCategorias.className = 'container';
+    containerMarcasCategorias.id = 'containerMarcasCategorias';
+
+    // lo añado al body
+    document.body.appendChild(containerMarcasCategorias);
+}
+
+
+// si hay cookie significa que tengo que mostrar un diálogo de JQuery UI notificando de algo (el valor de la cookie)
+let accionRealizada = '';
+if (accionRealizada = getCookie('accion')) {
+    borrarCookie('accion');
+    notificar('Acción realizada', accionRealizada);
+}
+
+// coloco display none a todo hasta que se cargue la tabla
+const containerTablaProductos = document.querySelector('#containerTablaProductos');
+containerTablaProductos.style.display = 'none';
+
+const containerBtnVolver = document.querySelector('#containerBtnVolver');
+containerBtnVolver.style.display = 'none';
+
+// inicializo la variable dataTable, donde almacenaré el objeto de dataTable tras cargar la tabla
+let dataTableProductos = '';
+
+// bandera que indica a qué controlador hacer la petición de array de productos, dependiendo del cargo (para mostrar coste o no)
+let cargoGerente = '';
+
+// texto que se enviará a confirmarAccion indicando qué accion se quiere realizar
+let textoConfirmacion = [
+    'Se va a <b>insertar esta línea</b> en la Base de Datos, ¿estás seguro de que quieres hacerlo?',
+    'Se va a <b>borrar esta línea</b> de la Base de Datos, ¿estás seguro de que quieres hacerlo?',
+    'Se va a <b>editar esta línea</b> en la Base de Datos, ¿estás seguro de que quieres hacerlo?',
+]
+
+// petición asíncrona que comprueba si el usuario logeado es Gerente y en función de eso carga unos datos u otros
+$.ajax({
+    type: "POST",
+    url: "FuncionesGenerales/comprobarCargoGerente",
+    dataType: "JSON",
+    success: function (response) {
+        cargoGerente = response;
+        cargarTablaProductos(cargoGerente);
+    },
+    error: function (error) {
+        console.log(error);
+    }
+});
+
+
+// hacer los fadein para todas las páginas
+// meter hover a todos los botones
+
+// si son los inputs de precio y coste, text-align: right

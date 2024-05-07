@@ -1,0 +1,166 @@
+body {
+  height: 90vh;
+  margin: 0;
+}
+
+
+
+
+#alertaCercaStockMinimo {
+  padding: 10px;
+  border: 2px solid orange;
+}
+
+#alertaDebajoStockMinimo {
+  padding: 10px;
+  border: 2px solid rgb(255, 101, 46);
+}
+
+#alertaSinStock {
+  padding: 10px;
+  border: 2px solid red;
+}
+
+#alertaCercaStockMinimo,
+#alertaDebajoStockMinimo,
+#alertaSinStock {
+  background-color: #f8f8f8;
+  margin: 10px auto;
+  width: 95%;
+}
+
+.bi-exclamation-triangle-fill {
+  margin-right: 10px;
+}
+
+#alertaCercaStockMinimo .bi-exclamation-triangle-fill {
+  color: rgb(133, 86, 0);
+}
+
+#alertaDebajoStockMinimo .bi-exclamation-triangle-fill {
+  color: rgb(121, 44, 0);
+}
+
+#alertaSinStock .bi-exclamation-triangle-fill {
+  color: rgb(124, 0, 0);
+}
+
+
+
+#containerOpciones a {
+  text-decoration: none;
+  height: 60px;
+}
+
+
+#containerOpciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.opcion {
+  display: flex;
+  justify-content: center;
+  margin: px auto;
+  align-items: center;
+
+  text-align: center;
+  width: 185px;
+  margin: 10px;
+  font-weight: 600;
+  background-color: #0076bb;
+  color: #fafafa;
+  padding: 15px 85px;
+  border-radius: 15px;
+  border: none;
+  box-shadow: 5px 5px 15px #bcbcbc, -5px -5px 15px #ffffff;
+  cursor: pointer;
+  font-size: 16px;
+  transition: transform 0.3s ease;
+}
+
+.opcion:hover {
+  transform: translateY(-2px);
+}
+
+
+#sinNotificaciones {
+  border: 1px solid green;
+}
+
+
+#sinNotificaciones h3,
+#notificaciones h3 {
+  text-align: center;
+}
+
+#containerOpciones,
+#sinNotificaciones,
+#notificaciones {
+  animation: fadein 1s;
+}
+
+.bi-bell-fill::before {
+  animation: moverCampana 1.5s;
+}
+
+#sinNotificaciones:hover .bi-bell-fill::before, #notificaciones:hover .bi-bell-fill::before {
+  animation: moverCampanaHover 1.5s;
+}
+
+@keyframes moverCampana {
+  0% {
+    rotate: 0deg;
+  }
+
+  25% {
+    rotate: 20deg;
+  }
+
+  75% {
+    rotate: -20deg;
+  }
+
+  100% {
+    rotate: 0deg;
+  }
+}
+
+@keyframes moverCampanaHover {
+  0% {
+    rotate: 0deg;
+  }
+
+  25% {
+    rotate: 20deg;
+  }
+
+  75% {
+    rotate: -20deg;
+  }
+
+  100% {
+    rotate: 0deg;
+  }
+}
+
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@media only screen and (max-width: 738px) {
+
+  .opcion {
+    width: 171px;
+  }
+
+}
+
